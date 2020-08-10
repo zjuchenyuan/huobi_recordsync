@@ -8,6 +8,7 @@ udstprice =[i for i in sess.get("https://www.huobi.com/-/x/general/exchange_rate
 from myrecord import Huobi_RecordSaver, runsql
 
 if __name__ == "__main__":
+    print("USDT:",udstprice)
     name, (HUOBIAPI_ID, HUOBIAPI_SECRET) = list(accounts.items())[0]
     Huobi_RecordSaver(name, HUOBIAPI_ID, HUOBIAPI_SECRET, mysqlstring)
     sums = {}

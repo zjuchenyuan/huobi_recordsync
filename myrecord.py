@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 from HuobiDMService import HuobiDM
 import requests, os
 import threading, pymysql, warnings, time
