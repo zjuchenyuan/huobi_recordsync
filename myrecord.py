@@ -13,6 +13,8 @@ def db():
 def runsql(sql, *args, onerror='raise', returnid=False, allow_retry=True):
     global thread_data
     conn = thread_data.__dict__.get("conn")
+    if len(args)==1 and isinstance(args[0], list):
+        args = args[0]
     if not conn:
         conn = db()
     if not conn.open:
@@ -99,7 +101,7 @@ class Huobi_RecordSaver():
         for item in records:
             sql += "(" + ("%s,"*len(item))[:-1] + "),"
             items.extend(item)
-        return runsql(sql[:-1], *items)
+        return runsql(sql[:-1], items)
 
 if __name__ == "__main__":
     from config import accounts, mysqlstring
