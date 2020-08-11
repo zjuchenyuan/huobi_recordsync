@@ -115,20 +115,28 @@ taoli   52.62
 
 ### 手续费相关说明
 
-- `field-fees`是这次交易的手续费，买入为币，卖出为钱 例如买入10000YEE，手续费field-fees就是20YEE
+- `field-fees`等价于`field-amount`*0.002，是这次交易的**抵扣前**手续费，买入为币，卖出为钱
 - `filled-fees`为扣除的手续费，说明此时没有开启HT抵扣，等于field-fees
 - `filled-points`为抵扣的HT或点卡的数量，我这里没考虑点卡，此时filled-fees=0
+- `field-amount` 完全成交时等于下单的数量`amount`，这是扣除手续费之前的数量
+- `field-cash-amount` 下单时的钱的数量 等于 amount乘以price
 
-如果你要查询手续费汇总，按1USDT=7RMB计算，SQL应该是这样：
+不开启HT抵扣：实际到账的币的数量是`field-amount`减去`filled-fees`
 
-```
-SELECT sum(`field-fees`*`price`*7) FROM `orders`;
-```
-
-如果不考虑HT本身的价格变化，将HT当成固定成本，令1HT=30RMB，这样计算：
+如果你要查询手续费汇总，只交易过USDT计价的交易对，不考虑HT抵扣的优惠，SQL应该是这样：单位是USDT
 
 ```
-SELECT sum(`filled-fees`*`price`*7+`filled-points`*30) FROM `orders`;
+SELECT sum(`field-fees`*`price`) FROM `orders` where type like 'buy%';
+#等价于SELECT sum(`field-amount`*0.002*`price`) FROM `orders` where type like 'buy%';
+SELECT sum(`field-fees`) FROM `orders` where type like 'sell%';
+```
+
+考虑HT抵扣后，这样计算：前两项单位为USDT，后一项为HT
+
+```
+SELECT sum(`filled-fees`*`price`) FROM `orders` where type like 'buy%';
+SELECT sum(`filled-fees`) FROM `orders` where type like 'sell%';
+SELECT sum(`filled-points`) FROM `orders`;
 ```
 
 ### role
