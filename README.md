@@ -1,9 +1,11 @@
 # huobi_recordsync
 Sync your huobi financial records to MySQL database
 
-火币只会显示最近三个月的财务记录，所以有必要将这部分数据同步到数据库，另外还能方便地计算[套利](https://blog.chenyuan.me/Bitcoin/)真实收益
+火币只会显示最近三个月的财务记录，所以有必要将这部分数据同步到数据库
 
-以及订单记录（撤单的除外），便于计算一共在币币交易支付了多少手续费
+目前支持以下数据类型同步：
+- 永续合约财务记录，能方便地计算[套利](https://blog.chenyuan.me/Bitcoin/)真实收益
+- 币币现货交易订单记录（撤单的除外），便于计算一共支付了多少手续费
 
 ## 用法
 
@@ -57,11 +59,14 @@ CREATE TABLE `orders` (
   `role` varchar(10) DEFAULT NULL,
   `filled-fees` decimal(40,18) DEFAULT NULL,
   `filled-points` decimal(40,18) DEFAULT NULL,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `name` (`name`),
+  KEY `symbol` (`symbol`),
+  KEY `created-at` (`created-at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8
 ```
 
-第一次执行 全量同步：对所有币种查询全量财务记录；查询60天内main账户的所有btc和eth订单
+第一次执行 全量同步：对所有永续合约币种查询全量财务记录；查询60天内main账户的所有btc和eth订单
 
 ```
 FULL=1 python3 myrecord.py
@@ -93,13 +98,22 @@ taoli   52.62
 
 ## 附加说明
 
-火币自己APP用的订单查询可以查询到任意币种四个月的所有记录，但同名的开放API一次调用只能查询单个币种两天的数据，不过API可以查询到180天
+### 火币API的限制
 
-也就意味着如果你参与了大量币种的交易例如100个，全量获取所有的币币交易记录需要100*180/2=9000次请求。。。
+火币自己APP用的订单查询一次调用可以查询到所有币种四个月的所有记录，
+但同名的开放API一次调用只能查询单个币种两天的数据（不过API可以查询到180天）
 
-你也可以在这里查询导出到订单记录： https://www.huobi.com/zh-cn/transac/?tab=1&type=0
+也就意味着如果你参与了大量币种的交易例如100个，全量获取所有的币币交易记录需要`100*180/2=9000`次请求；
+如果你不想自己列举币种的话，目前火币上有614个交易对，单个账户就需要55260次请求
 
-手续费相关说明：
+不过提供的最近48小时API可以查到所有币种，所以还是每天定时任务一次比较简单，避免全量同步啊
+
+### 手动导出币币交易订单
+
+当你不记得自己交易了多少币种时（也就难以确定orders_fullfetch.py的参数），
+你可以在这里查询导出订单记录： https://www.huobi.com/zh-cn/transac/?tab=1&type=0
+
+### 手续费相关说明
 
 - `field-fees`是这次交易的手续费，买入为币，卖出为钱 例如买入10000YEE，手续费field-fees就是20YEE
 - `filled-fees`为扣除的手续费，说明此时没有开启HT抵扣，等于field-fees
@@ -116,4 +130,11 @@ SELECT sum(`field-fees`*`price`*7) FROM `orders`;
 ```
 SELECT sum(`filled-fees`*`price`*7+`filled-points`*30) FROM `orders`;
 ```
+
+### role
+
+role只有两种：maker和taker。maker下订单后没有与已经存在的订单立即成交，提供了流动性；taker提取流动性，如市价单按对手价成交
+
+在火币的普通用户币币交易，maker和taker都是相同的费率，不过在其他交易所maker甚至有负费率 [Crypto守护者@知乎：在更多负手续费的环境下交易山寨币](https://zhuanlan.zhihu.com/p/34082684)
+
 
