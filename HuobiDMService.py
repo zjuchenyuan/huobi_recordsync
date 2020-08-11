@@ -6,12 +6,47 @@
 
 # zjuchenyuan: 增加了永续合约swap部分函数，文档: https://huobiapi.github.io/docs/coin_margined_swap/v1/cn/
 
-from HuobiDMUtil import http_get_request, api_key_post
+from HuobiDMUtil import http_get_request, api_key_post, api_key_get
 
 def create_swap_post_function(name):
     def func(self, **kwargs):
         return api_key_post(self.url, "/swap-api/v1/"+name, kwargs, self.access_key, self.secret_key)
     return func
+
+def create_spot_get_function(name):
+    def func(self, **kwargs):
+        return api_key_get(self.url, name, kwargs, self.access_key, self.secret_key)
+    return func
+
+class HuobiSPOT:
+    
+    def __init__(self,url,access_key,secret_key):
+        self.url = url
+        self.access_key = access_key
+        self.secret_key = secret_key
+    
+    order_orders = create_spot_get_function("/v1/order/orders")
+    """
+    搜索历史订单，只能搜索一个币种，可以用start-date和end-date每次2天遍历
+    states必填： submitted 已提交, partial-filled 部分成交, partial-canceled 部分成交撤销, filled 完全成交, canceled 已撤销，created
+    返回：id, amount, created-at, field-amount, field-cash-amount, field-fees, price, state, symbol, type
+    """
+    
+    order_history_48h = create_spot_get_function("/v1/order/history")
+    """
+    搜索最近48小时内历史订单
+    start-time小于当前48h无效
+    size: 1000
+    """
+    
+    def getallcoins(self):
+        """
+        返回所有交易对如btcusdt
+        """
+        return [i["symbol"] for i in http_get_request(self.url+"/v1/common/symbols", {})["data"]]
+    
+    def order_matchresults(self, id):
+        return api_key_get(self.url, "/v1/order/orders/"+str(id)+"/matchresults", {}, self.access_key, self.secret_key)
 
 class HuobiDM:
 
@@ -109,6 +144,13 @@ class HuobiDM:
         url = self.url + '/market/depth'
         return http_get_request(url, params)
     
+    # 获取永续合约行情深度数据
+    def get_swap_depth(self, contract_code, type):
+        params = {'contract_code': contract_code,
+                  'type': type}
+    
+        url = self.url + '/swap-ex/market/depth'
+        return http_get_request(url, params)
     
     # 获取KLine
     def get_contract_kline(self, symbol, period, size=150):
@@ -408,4 +450,21 @@ class HuobiDM:
     """
     查询母账户下所有子账户资产信息
     """
-
+    
+    swap_order = create_swap_post_function("swap_order")
+    """
+    合约交易
+    contract_code 如BTC-USD
+    client_order_id long 可以不填
+    price 价格
+    volume 张数
+    direction "buy"买 "sell"卖
+    offset "open"开 "close"平 我们要开空用sell open
+    lever_rate 1
+    order_price_type limit限价 opponent对手价（不用传price）
+    """
+    
+    swap_order_info = create_swap_post_function("swap_order_info")
+    """
+    获取合约订单信息
+    """
