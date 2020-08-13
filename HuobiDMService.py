@@ -18,6 +18,11 @@ def create_spot_get_function(name):
         return api_key_get(self.url, name, kwargs, self.access_key, self.secret_key)
     return func
 
+def create_spot_post_function(name):
+    def func(self, **kwargs):
+        return api_key_post(self.url, name, kwargs, self.access_key, self.secret_key)
+    return func
+
 class HuobiSPOT:
     
     def __init__(self,url,access_key,secret_key):
@@ -47,6 +52,21 @@ class HuobiSPOT:
     
     def order_matchresults(self, id):
         return api_key_get(self.url, "/v1/order/orders/"+str(id)+"/matchresults", {}, self.access_key, self.secret_key)
+
+    subuser_list = create_spot_get_function("/v2/sub-user/user-list")
+    """
+    获取子用户列表
+    """
+
+    subuser_transfer = create_spot_post_function("/v1/subuser/transfer")
+    """
+    母子用户之间资产划转
+    
+    sub-uid 必填
+    currency usdt
+    amount
+    type master-transfer-out master-transfer-in
+    """
 
 class HuobiDM:
 
