@@ -67,6 +67,8 @@ class HuobiSPOT:
     amount
     type master-transfer-out master-transfer-in
     """
+    
+    account_transer = create_spot_post_function("/v1/account/transfer")
 
 class HuobiDM:
 
