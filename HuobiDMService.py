@@ -8,6 +8,11 @@
 
 from HuobiDMUtil import http_get_request, api_key_post, api_key_get
 
+def create_swap_get_function(name):
+    def func(self, **kwargs):
+        return api_key_get(self.url, "/swap-api/v1/"+name, kwargs, self.access_key, self.secret_key)
+    return func
+
 def create_swap_post_function(name):
     def func(self, **kwargs):
         return api_key_post(self.url, "/swap-api/v1/"+name, kwargs, self.access_key, self.secret_key)
@@ -489,4 +494,20 @@ class HuobiDM:
     swap_order_info = create_swap_post_function("swap_order_info")
     """
     获取合约订单信息
+    """
+    
+    swap_account_position_info = create_swap_post_function("swap_account_position_info")
+    """
+    查询用户账户和持仓信息
+    必填 contract_code 如BTC-USD
+    """
+    
+    swap_account_info = create_swap_post_function("swap_account_info")
+    """
+    获取用户账户信息
+    """
+    
+    swap_contract_info = create_swap_get_function("swap_contract_info")
+    """
+    获取合约信息
     """

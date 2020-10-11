@@ -12,6 +12,8 @@ import json
 import urllib
 import datetime
 import requests
+import decimal
+from decimal import Decimal
 #import urlparse   # urllib.parse in python 3
 
 # timeout in 5 seconds:
@@ -29,7 +31,7 @@ def http_get_request(url, params, add_to_headers=None):
     try:
         response = requests.get(url, postdata, headers=headers, timeout=TIMEOUT)
         if response.status_code == 200:
-            return response.json()
+            return response.json(parse_float=decimal.Decimal)
         else:
             return {"status":"fail"}
     except Exception as e:
@@ -44,7 +46,12 @@ def http_post_request(url, params, add_to_headers=None):
     }
     if add_to_headers:
         headers.update(add_to_headers)
-    postdata = json.dumps(params)
+    p = {}
+    for k,v in params.items():
+        if isinstance(v, Decimal):
+            v = str(v)
+        p[k] = v
+    postdata = json.dumps(p)
     try:
         response = requests.post(url, postdata, headers=headers, timeout=TIMEOUT)
         if response.status_code == 200:
